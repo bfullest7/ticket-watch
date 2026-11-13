@@ -1,7 +1,7 @@
 name: Keep schedule alive
 
 # GitHub pauses scheduled checks after 60 days without commits.
-# This makes a tiny commit on the 1st of each month.
+# This makes a tiny commit on the 1st of each month, through June 2027.
 on:
   schedule:
     - cron: "0 12 1 * *"
@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
+          if [ "$(date -u +%Y%m)" -gt 202706 ]; then echo "Shows are over"; exit 0; fi
           date -u +%Y-%m-%d > .keepalive
           git config user.name "ticket-watch"
           git config user.email "actions@users.noreply.github.com"

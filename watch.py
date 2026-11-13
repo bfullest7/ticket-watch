@@ -4,6 +4,7 @@ when the cheapest ticket for a chosen date is at or under the budget.
 Python standard library only. Settings live in config.json.
 Secrets (from GitHub Secrets): SEATGEEK_CLIENT_ID, NTFY_TOPIC.
 """
+import datetime
 import json
 import os
 import sys
@@ -110,7 +111,10 @@ def main():
     found = prices_by_date(fetch_events(cfg, client_id), cfg["dates"])
     max_price = cfg["max_price_per_ticket"]
 
+    today = datetime.date.today().isoformat()
     for day in cfg["dates"]:
+        if day < today:
+            continue  # show has passed
         info = found.get(day)
         if not info:
             print(f"{day}: not found on SeatGeek")

@@ -9,6 +9,7 @@ chosen date is at or under the budget.
 - `max_price_per_ticket`: budget per ticket, fees included.
 - `tickets_needed`: shown in the alert as a reminder (SeatGeek only reports
   the single cheapest ticket, so check that enough seats are together).
+- Dates that have passed are skipped. The monthly keep-alive runs through June 2027.
 - `realert_drop`: after an alert, alert again only if the price falls this
   many more dollars. If the price goes back over budget, the next dip alerts again.
 
