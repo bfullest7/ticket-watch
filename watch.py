@@ -108,10 +108,10 @@ def notify(topic, title, message, click_url):
     first = emails[0] if emails else None
     try:
         _post(topic, title, message, click_url, first)
-    except urllib.error.HTTPError:
+    except urllib.error.HTTPError as err:
         if not first:
             raise
-        print("Email copy refused; sending push only.")
+        print(f"Email copy refused ({err.code} {err.read().decode()[:200]}); sending push only.")
         _post(topic, title, message, click_url, None)
     for extra in emails[1:]:
         try:
@@ -141,9 +141,14 @@ def main():
               f"fingerprint {hashlib.sha256(topic.encode()).hexdigest()[:8]}")
         emails = [e for e in os.environ.get("ALERT_EMAIL", "").split(",") if e.strip()]
         print(f"Email addresses set: {len(emails)}")
-        reply = _post(topic, "Ticket watch is working",
-                      "This is a test. You'll get alerts like this when prices drop.",
-                      None, emails[0].strip() if emails else None)
+        title = "Ticket watch is working"
+        text = "This is a test. You'll get alerts like this when prices drop."
+        try:
+            reply = _post(topic, title, text, None,
+                          emails[0].strip() if emails else None)
+        except urllib.error.HTTPError as err:
+            print(f"ntfy refused the email copy: {err.code} {err.read().decode()[:300]}")
+            reply = _post(topic, title, text, None, None)
         print(f"ntfy reply: id={reply.get('id')} event={reply.get('event')}")
         print("Sent test alert.")
         return
