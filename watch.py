@@ -95,7 +95,8 @@ def main():
     topic = os.environ.get("NTFY_TOPIC", "").strip()
     client_id = os.environ.get("SEATGEEK_CLIENT_ID", "").strip()
     if not topic:
-        sys.exit("Missing NTFY_TOPIC secret.")
+        print("No NTFY_TOPIC secret yet; skipping until it's added.")
+        return
 
     if os.environ.get("TEST_ALERT") == "true":
         notify(topic, "Ticket watch is working",
