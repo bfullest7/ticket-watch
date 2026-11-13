@@ -134,6 +134,17 @@ def notify(topic, title, message, click_url):
         print(send_email(title, message, click_url))
 
 
+def with_quantity(url, n):
+    """Open the SeatGeek page with the ticket count already chosen, so it
+    lists only listings that sell at least that many seats together."""
+    if not url or not n or n < 2:
+        return url
+    parts = urllib.parse.urlsplit(url)
+    query = dict(urllib.parse.parse_qsl(parts.query))
+    query["quantity"] = str(n)
+    return urllib.parse.urlunsplit(parts._replace(query=urllib.parse.urlencode(query)))
+
+
 def nice_date(day):
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -187,18 +198,20 @@ def main():
             entry.update(last_alerted=None, alerted_at=None, reminders_sent=0)
             continue
         n = cfg.get("tickets_needed", 2)
-        body = (f"Cheapest ticket is ${price:.0f} (your limit ${max_price}). "
-                f"Check there are {n} together. Tap to open SeatGeek.")
+        link = with_quantity(info["url"], n)
+        body = (f"Cheapest single ticket is ${price:.0f} (your limit ${max_price}). "
+                f"Tap to see SeatGeek listings for {n} tickets together; "
+                f"a pair may cost a little more.")
         if should_alert(price, max_price, entry["last_alerted"],
                         cfg.get("realert_drop", 10)):
             notify(topic, f"Noah Kahan {nice_date(day)}: ${price:.0f} a ticket",
-                   body, info["url"])
+                   body, link)
             entry.update(last_alerted=price, alerted_at=now.isoformat(),
                          reminders_sent=0)
             print(f"{day}: alert sent")
         elif reminder_due(entry.get("alerted_at"), entry.get("reminders_sent", 0), now):
             notify(topic, f"Reminder: Noah Kahan {nice_date(day)} still ${price:.0f}",
-                   body, info["url"])
+                   body, link)
             entry["reminders_sent"] = entry.get("reminders_sent", 0) + 1
             print(f"{day}: reminder {entry['reminders_sent']} sent")
 

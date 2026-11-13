@@ -81,5 +81,19 @@ class Emails(unittest.TestCase):
         self.assertIn("skipped", watch.send_email("t", "m", None))
 
 
+class WithQuantity(unittest.TestCase):
+    def test_adds_quantity(self):
+        self.assertEqual(
+            watch.with_quantity("https://seatgeek.com/noah-kahan-tickets/x/123", 2),
+            "https://seatgeek.com/noah-kahan-tickets/x/123?quantity=2")
+
+    def test_keeps_existing_query(self):
+        self.assertEqual(watch.with_quantity("https://seatgeek.com/e?a=1", 2),
+                         "https://seatgeek.com/e?a=1&quantity=2")
+
+    def test_no_url(self):
+        self.assertIsNone(watch.with_quantity(None, 2))
+
+
 if __name__ == "__main__":
     unittest.main()

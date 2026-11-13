@@ -7,8 +7,9 @@ chosen date is at or under the budget.
 ## Settings (`config.json`)
 - `dates`: show dates to watch (YYYY-MM-DD).
 - `max_price_per_ticket`: budget per ticket, fees included.
-- `tickets_needed`: shown in the alert as a reminder (SeatGeek only reports
-  the single cheapest ticket, so check that enough seats are together).
+- `tickets_needed`: the alert link opens SeatGeek with this many tickets
+  selected, so it lists only seats sold together. (The alert itself fires on
+  the cheapest single ticket, so a pair may cost a little more.)
 - Dates that have passed are skipped. The monthly keep-alive runs through June 2027.
 - `realert_drop`: after an alert, alert again only if the price falls this
   many more dollars. If the price goes back over budget, the next dip alerts again.
