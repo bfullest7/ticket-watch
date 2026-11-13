@@ -20,7 +20,8 @@ the first alert and again after an hour, then stops.
 ## Secrets (Settings → Secrets and variables → Actions)
 - `SEATGEEK_CLIENT_ID`: from developer.seatgeek.com.
 - `NTFY_TOPIC`: the channel name you subscribe to in the ntfy app.
-- `ALERT_EMAIL` (optional): also email each alert to this address.
+- `ALERT_EMAIL` (optional): also email each alert. Several addresses can be
+  separated by commas.
 
 ## Test it
 Actions → "Watch ticket prices" → Run workflow → tick "Send a test alert".

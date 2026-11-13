@@ -97,16 +97,26 @@ def _post(topic, title, message, click_url, email):
 
 
 def notify(topic, title, message, click_url):
-    """Phone push via ntfy, plus an email copy if ALERT_EMAIL is set.
-    If the email part is refused (ntfy limits free emails), still send the push."""
-    email = os.environ.get("ALERT_EMAIL", "").strip()
+    """Phone push via ntfy, plus email copies to ALERT_EMAIL (one address,
+    or several separated by commas). ntfy takes one email per message, so
+    extra addresses go through a second, unsubscribed topic: email only,
+    no duplicate phone push. If an email is refused (ntfy limits free
+    emails), the phone push still goes out."""
+    emails = [e.strip() for e in os.environ.get("ALERT_EMAIL", "").split(",")
+              if e.strip()]
+    first = emails[0] if emails else None
     try:
-        _post(topic, title, message, click_url, email)
+        _post(topic, title, message, click_url, first)
     except urllib.error.HTTPError:
-        if not email:
+        if not first:
             raise
         print("Email copy refused; sending push only.")
         _post(topic, title, message, click_url, None)
+    for extra in emails[1:]:
+        try:
+            _post(topic + "-email", title, message, click_url, extra)
+        except urllib.error.HTTPError as err:
+            print(f"Extra email copy refused ({err.code}).")
 
 
 def nice_date(day):

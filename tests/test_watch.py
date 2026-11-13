@@ -67,5 +67,19 @@ class ReminderDue(unittest.TestCase):
         self.assertFalse(watch.reminder_due(None, 0, self.at(60)))
 
 
+class Notify(unittest.TestCase):
+    def test_two_emails_one_push(self):
+        calls = []
+        orig = watch._post
+        watch._post = lambda t, ti, m, u, e: calls.append((t, e))
+        os.environ["ALERT_EMAIL"] = "a@x.com, b@x.com"
+        try:
+            watch.notify("topic", "t", "m", None)
+        finally:
+            watch._post = orig
+            del os.environ["ALERT_EMAIL"]
+        self.assertEqual(calls, [("topic", "a@x.com"), ("topic-email", "b@x.com")])
+
+
 if __name__ == "__main__":
     unittest.main()
