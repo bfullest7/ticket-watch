@@ -1,8 +1,11 @@
 name: Watch ticket prices
 
+# Runs in "shifts": each run checks every 5 minutes for about 5.5 hours.
+# A new run is queued every hour; it waits for the current shift to end,
+# then starts right away, so checks continue around the clock.
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "0 * * * *"
   workflow_dispatch:
     inputs:
       test_alert:
@@ -20,24 +23,50 @@ concurrency:
 jobs:
   watch:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 350
+    env:
+      SEATGEEK_CLIENT_ID: ${{ secrets.SEATGEEK_CLIENT_ID }}
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+      GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      TEST_ALERT: ${{ inputs.test_alert }}
     steps:
       - uses: actions/checkout@v4
-      - name: Check prices
-        env:
-          SEATGEEK_CLIENT_ID: ${{ secrets.SEATGEEK_CLIENT_ID }}
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
-          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          TEST_ALERT: ${{ inputs.test_alert }}
-        run: python3 watch.py
-      - name: Save what was alerted
+      - name: Check prices every 5 minutes
         run: |
           git config user.name "ticket-watch"
           git config user.email "actions@users.noreply.github.com"
-          git add state.json 2>/dev/null || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update prices seen"
-          for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done
-          exit 1
+
+          save_state() {
+            git add state.json 2>/dev/null || true
+            if git diff --cached --quiet; then return 0; fi
+            git commit -q -m "Update alert state"
+            for i in 1 2 3; do git pull --rebase -q && git push -q && return 0; sleep 5; done
+            echo "Could not save state (will retry next check)."
+          }
+
+          # A test, or no SeatGeek key yet: run once and stop.
+          if [ "$TEST_ALERT" = "true" ] || [ -z "$SEATGEEK_CLIENT_ID" ]; then
+            python3 watch.py
+            exit 0
+          fi
+
+          end=$((SECONDS + 330 * 60))   # shift length: 5.5 hours
+          failures=0
+          while true; do
+            echo "--- check at $(date -u +%H:%M) UTC ---"
+            if python3 watch.py; then
+              failures=0
+              save_state
+            else
+              failures=$((failures + 1))
+              echo "Check failed ($failures in a row)."
+              if [ "$failures" -ge 6 ]; then
+                echo "Failing for 30 minutes; stopping so GitHub sends an email."
+                exit 1
+              fi
+            fi
+            [ "$SECONDS" -ge "$end" ] && break
+            sleep 300
+          done

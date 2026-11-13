@@ -181,7 +181,6 @@ def main():
         price = info["price"]
         print(f"{day}: lowest ${price} ({info['count']} listings)")
         entry = state.setdefault(day, {"last_alerted": None})
-        entry["last_seen"] = price
 
         if price is None or price > max_price:
             # Back over budget (or sold out): stop reminders, alert again next dip.

@@ -1,6 +1,6 @@
 # ticket-watch
 
-Checks SeatGeek about every 15 minutes for Noah Kahan at Fenway and sends a
+Checks SeatGeek every 5 minutes, around the clock, for Noah Kahan at Fenway and sends a
 phone notification (via the free **ntfy** app) when the cheapest ticket for a
 chosen date is at or under the budget.
 
@@ -12,6 +12,12 @@ chosen date is at or under the budget.
 - Dates that have passed are skipped. The monthly keep-alive runs through June 2027.
 - `realert_drop`: after an alert, alert again only if the price falls this
   many more dollars. If the price goes back over budget, the next dip alerts again.
+
+## How the timing works
+Each run is a "shift" of about 5½ hours that checks every 5 minutes. A new
+shift is queued every hour, so when one ends the next starts right away. If
+checks keep failing for 30 minutes, the shift stops with an error and GitHub
+emails you.
 
 ## Reminders
 If the price is still in budget, a reminder goes out about 15 minutes after
