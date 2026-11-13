@@ -42,5 +42,30 @@ class PricesByDate(unittest.TestCase):
         self.assertEqual(got["2027-06-01"]["price"], 700)
 
 
+class ReminderDue(unittest.TestCase):
+    start = "2027-06-01T12:00:00+00:00"
+
+    def at(self, minutes):
+        import datetime
+        return (datetime.datetime.fromisoformat(self.start)
+                + datetime.timedelta(minutes=minutes))
+
+    def test_not_before_15(self):
+        self.assertFalse(watch.reminder_due(self.start, 0, self.at(5)))
+
+    def test_first_reminder_on_next_check(self):
+        self.assertTrue(watch.reminder_due(self.start, 0, self.at(14)))
+
+    def test_second_waits_for_hour(self):
+        self.assertFalse(watch.reminder_due(self.start, 1, self.at(30)))
+        self.assertTrue(watch.reminder_due(self.start, 1, self.at(60)))
+
+    def test_stops_after_two(self):
+        self.assertFalse(watch.reminder_due(self.start, 2, self.at(300)))
+
+    def test_no_alert_yet(self):
+        self.assertFalse(watch.reminder_due(None, 0, self.at(60)))
+
+
 if __name__ == "__main__":
     unittest.main()

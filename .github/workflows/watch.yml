@@ -27,6 +27,7 @@ jobs:
         env:
           SEATGEEK_CLIENT_ID: ${{ secrets.SEATGEEK_CLIENT_ID }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
           TEST_ALERT: ${{ inputs.test_alert }}
         run: python3 watch.py
       - name: Save what was alerted
