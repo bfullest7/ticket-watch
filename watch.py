@@ -1,13 +1,17 @@
-"""Ticket watch: checks SeatGeek prices and sends a phone alert (ntfy)
-when the cheapest ticket for a chosen date is at or under the budget.
+"""Ticket watch: checks SeatGeek prices and sends a phone alert (ntfy) and
+emails (through Gmail) when the cheapest ticket for a chosen date is at or
+under the budget.
 
 Python standard library only. Settings live in config.json.
-Secrets (from GitHub Secrets): SEATGEEK_CLIENT_ID, NTFY_TOPIC.
+Secrets (from GitHub Secrets): SEATGEEK_CLIENT_ID, NTFY_TOPIC, and for email
+ALERT_EMAIL, GMAIL_ADDRESS, GMAIL_APP_PASSWORD.
 """
 import datetime
 import hashlib
 import json
 import os
+import smtplib
+from email.message import EmailMessage
 import sys
 import urllib.error
 import urllib.parse
@@ -81,12 +85,10 @@ def reminder_due(alerted_at, reminders_sent, now):
     return waited >= REMINDER_MINUTES[reminders_sent] - GRACE_MINUTES
 
 
-def _post(topic, title, message, click_url, email):
+def _post(topic, title, message, click_url):
     headers = {"Title": title, "Tags": "ticket", "Priority": "high"}
     if click_url:
         headers["Click"] = click_url
-    if email:
-        headers["Email"] = email
     req = urllib.request.Request(
         NTFY_URL + urllib.parse.quote(topic),
         data=message.encode("utf-8"),
@@ -97,27 +99,39 @@ def _post(topic, title, message, click_url, email):
         return json.load(resp)
 
 
-def notify(topic, title, message, click_url):
-    """Phone push via ntfy, plus email copies to ALERT_EMAIL (one address,
-    or several separated by commas). ntfy takes one email per message, so
-    extra addresses go through a second, unsubscribed topic: email only,
-    no duplicate phone push. If an email is refused (ntfy limits free
-    emails), the phone push still goes out."""
-    emails = [e.strip() for e in os.environ.get("ALERT_EMAIL", "").split(",")
-              if e.strip()]
-    first = emails[0] if emails else None
+def alert_emails():
+    return [e.strip() for e in os.environ.get("ALERT_EMAIL", "").split(",")
+            if e.strip()]
+
+
+def send_email(title, message, click_url):
+    """Email the alert from the Gmail account to every ALERT_EMAIL address.
+    Returns a short status line; never raises, so the phone push still counts."""
+    to = alert_emails()
+    sender = os.environ.get("GMAIL_ADDRESS", "").strip()
+    password = os.environ.get("GMAIL_APP_PASSWORD", "").replace(" ", "").strip()
+    if not (to and sender and password):
+        return "Email skipped (email secrets not all set)."
+    msg = EmailMessage()
+    msg["Subject"] = title
+    msg["From"] = f"Ticket watch <{sender}>"
+    msg["To"] = ", ".join(to)
+    msg.set_content(message + (f"\n\n{click_url}" if click_url else ""))
     try:
-        _post(topic, title, message, click_url, first)
-    except urllib.error.HTTPError as err:
-        if not first:
-            raise
-        print(f"Email copy refused ({err.code} {err.read().decode()[:200]}); sending push only.")
-        _post(topic, title, message, click_url, None)
-    for extra in emails[1:]:
-        try:
-            _post(topic + "-email", title, message, click_url, extra)
-        except urllib.error.HTTPError as err:
-            print(f"Extra email copy refused ({err.code}).")
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as smtp:
+            smtp.login(sender, password)
+            smtp.send_message(msg)
+        return f"Email sent to {len(to)} address(es)."
+    except (smtplib.SMTPException, OSError) as err:
+        return f"Email failed: {err}"
+
+
+def notify(topic, title, message, click_url):
+    """Phone push via ntfy, plus an email copy through Gmail."""
+    try:
+        _post(topic, title, message, click_url)
+    finally:
+        print(send_email(title, message, click_url))
 
 
 def nice_date(day):
@@ -139,17 +153,11 @@ def main():
         # Safe clues for troubleshooting (never prints the topic itself).
         print(f"Topic length {len(topic)}, starts 'tw-': {topic.startswith('tw-')}, "
               f"fingerprint {hashlib.sha256(topic.encode()).hexdigest()[:8]}")
-        emails = [e for e in os.environ.get("ALERT_EMAIL", "").split(",") if e.strip()]
-        print(f"Email addresses set: {len(emails)}")
         title = "Ticket watch is working"
         text = "This is a test. You'll get alerts like this when prices drop."
-        try:
-            reply = _post(topic, title, text, None,
-                          emails[0].strip() if emails else None)
-        except urllib.error.HTTPError as err:
-            print(f"ntfy refused the email copy: {err.code} {err.read().decode()[:300]}")
-            reply = _post(topic, title, text, None, None)
+        reply = _post(topic, title, text, None)
         print(f"ntfy reply: id={reply.get('id')} event={reply.get('event')}")
+        print(send_email(title, text, None))
         print("Sent test alert.")
         return
 

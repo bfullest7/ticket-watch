@@ -22,6 +22,8 @@ the first alert and again after an hour, then stops.
 - `NTFY_TOPIC`: the channel name you subscribe to in the ntfy app.
 - `ALERT_EMAIL` (optional): also email each alert. Several addresses can be
   separated by commas.
+- `GMAIL_ADDRESS` and `GMAIL_APP_PASSWORD`: the Gmail account that sends the
+  emails, and a Google app password for it (myaccount.google.com/apppasswords).
 
 ## Test it
 Actions → "Watch ticket prices" → Run workflow → tick "Send a test alert".

@@ -28,6 +28,8 @@ jobs:
           SEATGEEK_CLIENT_ID: ${{ secrets.SEATGEEK_CLIENT_ID }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           TEST_ALERT: ${{ inputs.test_alert }}
         run: python3 watch.py
       - name: Save what was alerted

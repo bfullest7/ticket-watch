@@ -67,18 +67,18 @@ class ReminderDue(unittest.TestCase):
         self.assertFalse(watch.reminder_due(None, 0, self.at(60)))
 
 
-class Notify(unittest.TestCase):
-    def test_two_emails_one_push(self):
-        calls = []
-        orig = watch._post
-        watch._post = lambda t, ti, m, u, e: calls.append((t, e))
-        os.environ["ALERT_EMAIL"] = "a@x.com, b@x.com"
+class Emails(unittest.TestCase):
+    def test_split(self):
+        os.environ["ALERT_EMAIL"] = "a@x.com, b@x.com ,"
         try:
-            watch.notify("topic", "t", "m", None)
+            self.assertEqual(watch.alert_emails(), ["a@x.com", "b@x.com"])
         finally:
-            watch._post = orig
             del os.environ["ALERT_EMAIL"]
-        self.assertEqual(calls, [("topic", "a@x.com"), ("topic-email", "b@x.com")])
+
+    def test_skips_without_secrets(self):
+        for k in ("ALERT_EMAIL", "GMAIL_ADDRESS", "GMAIL_APP_PASSWORD"):
+            os.environ.pop(k, None)
+        self.assertIn("skipped", watch.send_email("t", "m", None))
 
 
 if __name__ == "__main__":
