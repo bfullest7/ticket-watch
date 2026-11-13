@@ -5,6 +5,7 @@ Python standard library only. Settings live in config.json.
 Secrets (from GitHub Secrets): SEATGEEK_CLIENT_ID, NTFY_TOPIC.
 """
 import datetime
+import hashlib
 import json
 import os
 import sys
@@ -92,8 +93,8 @@ def _post(topic, title, message, click_url, email):
         headers=headers,
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=30):
-        pass
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.load(resp)
 
 
 def notify(topic, title, message, click_url):
@@ -135,9 +136,15 @@ def main():
         return
 
     if os.environ.get("TEST_ALERT") == "true":
-        notify(topic, "Ticket watch is working",
-               "This is a test. You'll get alerts like this when prices drop.",
-               None)
+        # Safe clues for troubleshooting (never prints the topic itself).
+        print(f"Topic length {len(topic)}, starts 'tw-': {topic.startswith('tw-')}, "
+              f"fingerprint {hashlib.sha256(topic.encode()).hexdigest()[:8]}")
+        emails = [e for e in os.environ.get("ALERT_EMAIL", "").split(",") if e.strip()]
+        print(f"Email addresses set: {len(emails)}")
+        reply = _post(topic, "Ticket watch is working",
+                      "This is a test. You'll get alerts like this when prices drop.",
+                      None, emails[0].strip() if emails else None)
+        print(f"ntfy reply: id={reply.get('id')} event={reply.get('event')}")
         print("Sent test alert.")
         return
 
