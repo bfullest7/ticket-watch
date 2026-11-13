@@ -105,7 +105,8 @@ def main():
         return
 
     if not client_id:
-        sys.exit("Missing SEATGEEK_CLIENT_ID secret.")
+        print("No SEATGEEK_CLIENT_ID secret yet; skipping until it's added.")
+        return
 
     state = load_json(STATE_PATH, {})
     found = prices_by_date(fetch_events(cfg, client_id), cfg["dates"])
