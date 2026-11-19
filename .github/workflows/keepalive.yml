@@ -2,9 +2,9 @@ name: Keep schedule alive
 
 # GitHub pauses scheduled checks after 60 days without commits.
 # This makes a tiny commit on the 1st of each month, through June 2027.
+# Turned off Nov 2026: SeatGeek's free API has no ticket prices. To turn back on,
+# restore the schedule from git history.
 on:
-  schedule:
-    - cron: "0 12 1 * *"
   workflow_dispatch:
 
 permissions:

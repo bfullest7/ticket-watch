@@ -1,5 +1,7 @@
 # ticket-watch
 
+**Turned off (Nov 2026):** SeatGeek approved the developer account, but its free API doesn't return ticket prices or listings, so the watcher can't check prices. The scheduled checks are removed; everything else is kept in case another price source turns up. Event Spy (event-spy.com) is used instead.
+
 Checks SeatGeek every 5 minutes, around the clock, for Noah Kahan at Fenway and sends a
 phone notification (via the free **ntfy** app) when the cheapest ticket for a
 chosen date is at or under the budget.

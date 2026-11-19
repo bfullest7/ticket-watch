@@ -3,9 +3,9 @@ name: Watch ticket prices
 # Runs in "shifts": each run checks every 5 minutes for about 5.5 hours.
 # A new run is queued every hour; it waits for the current shift to end,
 # then starts right away, so checks continue around the clock.
+# Turned off Nov 2026: SeatGeek's free API has no ticket prices. To turn back on,
+# restore the schedule from git history.
 on:
-  schedule:
-    - cron: "0 * * * *"
   workflow_dispatch:
     inputs:
       test_alert:
